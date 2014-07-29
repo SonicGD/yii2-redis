@@ -367,8 +367,13 @@ class Connection extends Component
         if (($line = fgets($this->_socket)) === false) {
             throw new Exception("Failed to read from socket.\nRedis command was: " . $command);
         }
-        $type = $line[0];
-        $line = mb_substr($line, 1, -2, '8bit');
+        $line = trim($line);
+        if (!$line) {
+            return null;
+        }
+        //$type = $line[0];
+        list($type, $line) = [$line[0], intval(substr($line, 1))];
+        //$line = mb_substr($line, 1, -2, '8bit');
         switch ($type) {
             case '+': // Status reply
 
@@ -385,21 +390,22 @@ class Connection extends Component
                 $length = $line + 2;
                 $data = '';
                 while ($length > 0) {
-                    if (($block = fread($this->_socket, $line + 2)) === false) {
+                    if (($block = stream_get_contents($this->_socket, $line + 2)) === false) {
                         throw new Exception("Failed to read from socket.\nRedis command was: " . $command);
                     }
                     $data .= $block;
                     $length -= mb_strlen($block, '8bit');
                 }
-
                 return mb_substr($data, 0, -2, '8bit');
             case '*': // Multi-bulk replies
-                $count = (int) $line;
+                $count = (int)$line;
                 $data = [];
                 for ($i = 0; $i < $count; $i++) {
-                    $data[] = $this->parseResponse($command);
+                    $response = $this->parseResponse($command);
+                    if ($response) {
+                        $data[] = $response;
+                    }
                 }
-
                 return $data;
             default:
                 throw new Exception('Received illegal data from redis: ' . $line . "\nRedis command was: " . $command);

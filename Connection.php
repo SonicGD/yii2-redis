@@ -388,12 +388,6 @@ class Connection extends Component
         $connection = $this->hostname . ':' . $this->port . ', database=' . $this->database;
         \Yii::trace('Opening redis DB connection: ' . $connection, __CLASS__);
         $this->_socket = phpiredis_connect($this->hostname, $this->port);      // normal connection
-        /*$this->_socket = @stream_socket_client(
-            'tcp://' . $this->hostname . ':' . $this->port,
-            $errorNumber,
-            $errorDescription,
-            $this->connectionTimeout ? $this->connectionTimeout : ini_get("default_socket_timeout")
-        );*/
         if ($this->_socket) {
             if ($this->password !== null) {
                 $this->executeCommand('AUTH', [$this->password]);
@@ -492,10 +486,9 @@ class Connection extends Component
         $this->open();
 
         array_unshift($params, $name);
-        /*$command = '*' . count($params) . "\r\n";
-        foreach ($params as $arg) {
-            $command .= '$' . mb_strlen($arg, '8bit') . "\r\n" . $arg . "\r\n";
-        }*/
+        foreach ($params as $k => $arg) { //hiredis want strings
+            $params[$k] = strval($arg);
+        }
 
         \Yii::trace("Executing Redis Command: {$name}", __CLASS__);
         //fwrite($this->_socket, $command);

@@ -154,11 +154,11 @@ class Cache extends \yii\caching\Cache
 
         $failedKeys = [];
         if ($expire == 0) {
-            $this->redis->executeCommand('MSET', $args);
+            $this->redis->executeCommand('MSET', [$args]);
         } else {
             $expire = (int) ($expire * 1000);
             $this->redis->executeCommand('MULTI');
-            $this->redis->executeCommand('MSET', $args);
+            $this->redis->executeCommand('MSET', [$args]);
             $index = [];
             foreach ($data as $key => $value) {
                 $this->redis->executeCommand('PEXPIRE', [$key, $expire]);

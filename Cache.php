@@ -117,7 +117,7 @@ class Cache extends \yii\caching\Cache
      */
     protected function getValues($keys)
     {
-        $response = $this->redis->executeCommand('MGET', $keys);
+        $response = $this->redis->executeCommand('MGET', [$keys]);
         $result = [];
         $i = 0;
         foreach ($keys as $key) {

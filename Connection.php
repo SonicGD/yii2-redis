@@ -7,6 +7,7 @@
 
 namespace yii\redis;
 
+use Redis;
 use yii\base\Component;
 use yii\db\Exception;
 use yii\helpers\Inflector;
@@ -361,7 +362,7 @@ class Connection extends Component
     ];
 
     /**
-     * @var resource redis socket connection
+     * @var Redis redis socket connection
      */
     private $_socket;
 
@@ -423,10 +424,7 @@ class Connection extends Component
     public function close()
     {
         if ($this->_socket !== null) {
-            $connection = ($this->unixSocket ?: $this->hostname . ':' . $this->port) . ', database=' . $this->database;
-            \Yii::trace('Closing DB connection: ' . $connection, __METHOD__);
-            $this->executeCommand('QUIT');
-            stream_socket_shutdown($this->_socket, STREAM_SHUT_RDWR);
+            $this->_socket->close();
             $this->_socket = null;
         }
     }

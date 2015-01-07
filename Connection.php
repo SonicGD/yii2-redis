@@ -496,6 +496,5 @@ class Connection extends Component
     {
         $this->open();
         return call_user_func_array(array($this->_socket, $name), $params);
-
     }
 }

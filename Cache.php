@@ -1,8 +1,8 @@
 <?php
 /**
- * @link http://www.yiiframework.com/
+ * @link      http://www.yiiframework.com/
  * @copyright Copyright (c) 2008 Yii Software LLC
- * @license http://www.yiiframework.com/license/
+ * @license   http://www.yiiframework.com/license/
  */
 
 namespace yii\redis;
@@ -54,7 +54,7 @@ use yii\base\InvalidConfigException;
  * ~~~
  *
  * @author Carsten Brandt <mail@cebe.cc>
- * @since 2.0
+ * @since  2.0
  */
 class Cache extends \yii\caching\Cache
 {
@@ -96,12 +96,12 @@ class Cache extends \yii\caching\Cache
      * with the cached data, if there is any, has changed. So a call to [[get]]
      * may return false while exists returns true.
      * @param mixed $key a key identifying the cached value. This can be a simple string or
-     * a complex data structure consisting of factors representing the key.
+     *                   a complex data structure consisting of factors representing the key.
      * @return boolean true if a value exists in cache, false if the value is not in the cache or expired.
      */
     public function exists($key)
     {
-        return (bool) $this->redis->executeCommand('EXISTS', [$this->buildKey($key)]);
+        return (bool)$this->redis->executeCommand('EXISTS', [$this->buildKey($key)]);
     }
 
     /**
@@ -133,11 +133,11 @@ class Cache extends \yii\caching\Cache
     protected function setValue($key, $value, $expire)
     {
         if ($expire == 0) {
-            return (bool) $this->redis->executeCommand('SET', [$key, $value]);
+            return (bool)$this->redis->executeCommand('SET', [$key, $value]);
         } else {
-            $expire = (int) ($expire * 1000);
+            $expire = (int)($expire * 1000);
 
-            return (bool) $this->redis->executeCommand('SET', [$key, $value, $expire]);
+            return (bool)$this->redis->executeCommand('SET', [$key, $value, ['px' => $expire]]);
         }
     }
 
@@ -156,7 +156,7 @@ class Cache extends \yii\caching\Cache
         if ($expire == 0) {
             $this->redis->executeCommand('MSET', [$args]);
         } else {
-            $expire = (int) ($expire * 1000);
+            $expire = (int)($expire * 1000);
             $this->redis->executeCommand('MULTI');
             $this->redis->executeCommand('MSET', [$args]);
             $index = [];
@@ -182,11 +182,16 @@ class Cache extends \yii\caching\Cache
     protected function addValue($key, $value, $expire)
     {
         if ($expire == 0) {
-            return (bool) $this->redis->executeCommand('SETNX', [$key, $value]);
+            return (bool)$this->redis->executeCommand('SETNX', [$key, $value]);
         } else {
-            $expire = (int) ($expire * 1000);
+            $expire = (int)($expire * 1000);
 
-            return (bool) $this->redis->executeCommand('SETNX', [$key, $value, $expire]);
+            $result = (bool)$this->redis->executeCommand('SETNX', [$key, $value]);
+            if ($result) {
+                $this->redis->executeCommand('PEXPIRE', [$key, $expire]);
+            }
+
+            return $result;
         }
     }
 
@@ -195,7 +200,7 @@ class Cache extends \yii\caching\Cache
      */
     protected function deleteValue($key)
     {
-        return (bool) $this->redis->executeCommand('DEL', [$key]);
+        return (bool)$this->redis->executeCommand('DEL', [$key]);
     }
 
     /**

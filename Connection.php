@@ -476,7 +476,7 @@ class Connection extends Component
      * Executes a redis command.
      * For a list of available commands and their parameters see http://redis.io/commands.
      *
-     * @param string $name   the name of the command
+     * @param string $name the name of the command
      * @param array  $params list of parameters for the command
      * @return array|bool|null|string Dependent on the executed command this method
      *                       will return different data types:
@@ -495,6 +495,12 @@ class Connection extends Component
     public function executeCommand($name, $params = [])
     {
         $this->open();
+
         return call_user_func_array(array($this->_socket, $name), $params);
+    }
+
+    public function getLastError()
+    {
+        return $this->_socket->getLastError();
     }
 }

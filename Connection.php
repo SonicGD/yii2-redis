@@ -29,8 +29,8 @@ use yii\helpers\Inflector;
  * @method mixed get($key) Set the string value of a key
  * TODO document methods
  *
- * @property string           $driverName Name of the DB driver. This property is read-only.
- * @property boolean          $isActive Whether the DB connection is established. This property is read-only.
+ * @property string           $driverName       Name of the DB driver. This property is read-only.
+ * @property boolean          $isActive         Whether the DB connection is established. This property is read-only.
  * @property LuaScriptBuilder $luaScriptBuilder This property is read-only.
  *
  * @author Carsten Brandt <mail@cebe.cc>
@@ -72,11 +72,11 @@ class Connection extends Component
     /**
      * @var float timeout to use for connection to redis. If not set the timeout set in php.ini will be used: ini_get("default_socket_timeout")
      */
-    public $connectionTimeout = null;
+    public $connectionTimeout;
     /**
      * @var float timeout to use for redis socket when reading and writing data. If not set the php default value will be used.
      */
-    public $dataTimeout = null;
+    public $dataTimeout;
     /**
      * @var array List of available redis commands http://redis.io/commands
      */
@@ -400,7 +400,7 @@ class Connection extends Component
         $connection = ($this->unixSocket ?: $this->hostname . ':' . $this->port) . ', database=' . $this->database;
         \Yii::trace('Opening redis DB connection: ' . $connection, __METHOD__);
         $this->_socket = new \Redis();
-        $this->_socket->connect($this->unixSocket ? $this->unixSocket : $this->hostname, $this->port);
+        $this->_socket->connect($this->unixSocket ?: $this->hostname, $this->port);
         if ($this->_socket) {
             if ($this->password !== null) {
                 $this->_socket->auth($this->password);
@@ -476,10 +476,10 @@ class Connection extends Component
      * Executes a redis command.
      * For a list of available commands and their parameters see http://redis.io/commands.
      *
-     * @param string $name the name of the command
+     * @param string $name   the name of the command
      * @param array  $params list of parameters for the command
      * @return array|bool|null|string Dependent on the executed command this method
-     * will return different data types:
+     *                       will return different data types:
      *
      * - `true` for commands that return "status reply" with the message `'OK'` or `'PONG'`.
      * - `string` for commands that return "status reply" that does not have the message `OK` (since version 2.0.1).
@@ -490,13 +490,18 @@ class Connection extends Component
      *
      * See [redis protocol description](http://redis.io/topics/protocol)
      * for details on the mentioned reply types.
-     * @trows Exception for commands that return [error reply](http://redis.io/topics/protocol#error-reply).
+     * @throws Exception for commands that return [error reply](http://redis.io/topics/protocol#error-reply).
      */
-    public function executeCommand($name, $params = [])
+    public function executeCommand($name, array $params = [])
     {
         $this->open();
 
-        return call_user_func_array(array($this->_socket, $name), $params);
+        $result = call_user_func_array([$this->_socket, $name], $params);
+        if ($result === false) {
+            throw new Exception('Redis error: ' . $this->_socket->getLastError() . '\nRedis command was: ' . $name);
+        }
+
+        return $result;
     }
 
     public function getLastError()

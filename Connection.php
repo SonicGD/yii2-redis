@@ -497,7 +497,7 @@ class Connection extends Component
         $this->open();
 
         $result = call_user_func_array([$this->_socket, $name], $params);
-        if ($result === false) {
+        if ($result === false && $this->_socket->getLastError()) {
             throw new Exception('Redis error: ' . $this->_socket->getLastError() . '\nRedis command was: ' . $name);
         }
 
